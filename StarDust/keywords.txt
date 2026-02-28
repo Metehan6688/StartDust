@@ -1,0 +1,74 @@
+#######################################
+# Syntax Coloring Map For StarDust
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+StarDust	KEYWORD1
+PacketData	KEYWORD1
+PacketHeader	KEYWORD1
+PacketType	KEYWORD1
+RequestPayload	KEYWORD1
+TelemetryPayload	KEYWORD1
+CommandPayload	KEYWORD1
+AcceptPayload	KEYWORD1
+RefusePayload	KEYWORD1
+ErrorPayload	KEYWORD1
+EmergencyPayload	KEYWORD1
+SystemCommandPayload	KEYWORD1
+SystemInfoPayload	KEYWORD1
+SystemHeartbeatPayload	KEYWORD1
+BetrayalPayload	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+update	KEYWORD2
+setCryptoKey	KEYWORD2
+setTimeout	KEYWORD2
+setTargetID	KEYWORD2
+sendRequest	KEYWORD2
+sendAccept	KEYWORD2
+sendRefuse	KEYWORD2
+sendTelemetry	KEYWORD2
+sendCommand	KEYWORD2
+sendError	KEYWORD2
+sendEmergency	KEYWORD2
+sendSystemCommand	KEYWORD2
+sendSystemInfo	KEYWORD2
+sendSystemHeartbeat	KEYWORD2
+sendBetrayal	KEYWORD2
+receiveRequest	KEYWORD2
+receiveAccept	KEYWORD2
+receiveRefuse	KEYWORD2
+receiveTelemetry	KEYWORD2
+receiveCommand	KEYWORD2
+receiveError	KEYWORD2
+receiveEmergency	KEYWORD2
+receiveSystemCommand	KEYWORD2
+receiveSystemInfo	KEYWORD2
+receiveSystemHeartbeat	KEYWORD2
+receiveBetrayal	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+PACKET_START_BYTE	LITERAL1
+PAYLOADSIZE	LITERAL1
+BROADCAST_ID	LITERAL1
+REQUEST	LITERAL1
+ACCEPT	LITERAL1
+REFUSE	LITERAL1
+TELEMETRY	LITERAL1
+COMMAND	LITERAL1
+ERROR	LITERAL1
+EMERGENCY	LITERAL1
+SYSTEMCOMMAND	LITERAL1
+SYSTEMINFO	LITERAL1
+SYSTEMHEARTBEAT	LITERAL1
+BETRAYAL	LITERAL1
