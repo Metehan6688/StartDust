@@ -1,3 +1,47 @@
+/*
+
+MIT License
+
+Copyright (c) 2026 Metehan Semerci
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+StarDust Communication Protocol Implementation
+Author: Metehan Semerci
+Contact: furkanmetehansemerci@gmail.com
+
+
+That is a library for the StarDust communication protocol, designed for secure and 
+efficient data exchange in embedded systems. It provides a structured way to send and
+receive various types of packets, including requests, telemetry, commands, errors, and more.
+
+The library includes features such as CRC validation, payload encryption/decryption, 
+and a non-blocking parser for real-time applications.
+
+*/
+
+
+
+
+
+
+
 #ifndef STARDUST_H
 #define STARDUST_H
 
@@ -9,21 +53,25 @@
 #else
     #include <cstddef>
     // PC testleri veya özel ortamlar için temel Stream sınıfı
+    // Basic Stream class for PC testing or special environments
     class Stream {
     public:
         virtual size_t write(const uint8_t* buffer, size_t size) { return 0; }
         virtual int available() { return 0; }
         virtual int read() { return -1; }
     };
-    extern uint32_t millis(); // RTOS veya PC için kendi millis fonksiyonunuzu sağlamalısınız
+    extern uint32_t millis(); // RTOS veya PC için kendi millis fonksiyonunuzu sağlamalısınız bu sayede çakışma önlenir
+                              // You should provide your own millis function for RTOS or PC; this will prevent conflicts.
 #endif
 
 /* MUTLAK PROTOKOL TANIMLAYICILARI */
+/* ABSOLUTE PROTOCOL IDENTIFIERS */
 constexpr uint8_t PACKET_START_BYTE = 0xAA; //
 constexpr uint8_t PAYLOADSIZE = 64;         //
 constexpr uint8_t BROADCAST_ID = 0xFF;
 
 /* PAKET TİPLERİ */
+/* PACKET TYPES */
 enum PacketType : uint8_t { //
     REQUEST = 1, ACCEPT = 2, REFUSE = 3,
     TELEMETRY = 4, COMMAND = 5, ERROR = 101, EMERGENCY = 102,
@@ -33,13 +81,19 @@ enum PacketType : uint8_t { //
 
 /* ======================================================= */
 /* =============== VERİ PAKETİ YAPILARI ===================*/
-/* (Ana struct yapılarına ve isimlerine dokunulmadı) */
+/* =============== DATA PACKET STRUCTURES =================*/
 /* ======================================================= */
 struct __attribute__((packed)) RequestPayload { uint8_t version; uint8_t requestType; bool isCritical; };
 struct __attribute__((packed)) AcceptPayload { uint8_t version; uint8_t acceptType; bool accepted; };
 struct __attribute__((packed)) RefusePayload { uint8_t version; uint8_t refuseType; bool refused; };
 struct __attribute__((packed)) TelemetryPayload { uint8_t version; double latitude; double longitude; double altitude; float yaw; float pitch; uint32_t timestamp; uint8_t status; };
-struct __attribute__((packed)) CommandPayload { uint8_t version; float targetYaw; float targetPitch; uint8_t actionCode; };
+struct __attribute__((packed)) CommandPayload { 
+    uint8_t version; 
+    double targetLat; 
+    double targetLon; 
+    float targetAlt; 
+    uint8_t actionCode; 
+};
 struct __attribute__((packed)) ErrorPayload { uint8_t version; uint16_t errorCode; uint16_t errorLocation; uint8_t errorSeverity; };
 struct __attribute__((packed)) EmergencyPayload { uint8_t version; uint16_t emergencyCode; uint16_t emergencyLocation; uint8_t emergencySeverity; };
 struct __attribute__((packed)) SystemCommandPayload { uint8_t version; uint16_t commandCode; uint16_t commandParameter; uint8_t commandSenderID; uint8_t commandAuthorityLevel; };
@@ -48,6 +102,7 @@ struct __attribute__((packed)) SystemHeartbeatPayload{ uint8_t version; bool bea
 struct __attribute__((packed)) BetrayalPayload{ uint8_t version; bool isBetrayal; uint16_t betrayalCode; uint16_t betrayalLocation; uint8_t betrayalSeverity; bool knowsSecret; bool planExecuted; bool hasEscapePlan; bool preparedForBetrayal; float betrayalSuccessChance; float betrayalDetectionChance; bool hasAllies; uint8_t numberOfAllies; float allyLoyalty; bool knighFall; };
 
 /* =============== ORTAK PAKET YAPILARI ===================*/
+/* ============== COMMON PACKET STRUCTURES ================*/
 struct __attribute__((packed)) PacketHeader {
     uint8_t start; uint8_t source; uint8_t target; PacketType type; uint8_t size; //
 };
@@ -64,28 +119,35 @@ enum class ParserState { //
 
 /* ======================================================= */
 /* =================== STARDUST SINIFI ====================*/
+/* =================== STARDUST CLASS =====================*/
 /* ======================================================= */
 class StarDust {
 public:
     StarDust();
 
     // Sistemi Başlatma
+    // Initialize the system
     void begin(Stream& port, uint8_t myID, uint8_t defaultTargetID = 0x00);
     
     // Güvenlik ve Ayarlar
-    void setCryptoKey(const uint8_t* newKey); //
+    void setCryptoKey(const uint8_t* newKey);
     void setTimeout(uint32_t timeoutMs);      // Okuma için timeout süresi belirleme
+                                              // Set timeout duration for reading
+
     void setTargetID(uint8_t targetID);       // İletişim kurulacak hedefi/slave'i değiştir
+                                              // Change the target/slave to communicate with
 
     // Ana Döngü Güncellemesi (Non-blocking Okuma)
-    bool update(PacketData& outPacket);       //
+    // Main loop update (Non-blocking reading)
+    bool update(PacketData& outPacket);
 
     // ==== GÖNDERİM FONKSİYONLARI ====
+    // ==== TRANSMISSION FUNCTIONS ====
     PacketData sendRequest(uint8_t version, uint8_t requestType, bool isCritical); //
     PacketData sendAccept(uint8_t version, uint8_t acceptType, bool accepted); //
     PacketData sendRefuse(uint8_t version, uint8_t refuseType, bool refused); //
     PacketData sendTelemetry(uint8_t version, double latitude, double longitude, double altitude, float yaw, float pitch, uint32_t timestamp, uint8_t status); //
-    PacketData sendCommand(uint8_t version, float targetYaw, float targetPitch, uint8_t actionCode); //
+    PacketData sendCommand(uint8_t version,double targetLat,double targetLon,float targetAlt,uint8_t actionCode); //
     PacketData sendError(uint8_t version, uint16_t errorCode, uint16_t errorLocation, uint8_t errorSeverity); //
     PacketData sendEmergency(uint8_t version, uint16_t emergencyCode, uint16_t emergencyLocation, uint8_t emergencySeverity); //
     PacketData sendSystemCommand(uint8_t version, uint16_t commandCode, uint16_t commandParameter, uint8_t commandSenderID, uint8_t commandAuthorityLevel); //
@@ -94,6 +156,7 @@ public:
     PacketData sendBetrayal(uint8_t version, bool isBetrayal, uint16_t betrayalCode, uint16_t betrayalLocation, uint8_t betrayalSeverity, bool knowsSecret, bool planExecuted, bool hasEscapePlan, bool preparedForBetrayal, float betrayalSuccessChance, float betrayalDetectionChance, bool hasAllies, uint8_t numberOfAllies, float allyLoyalty, bool knighFall); //
 
     // ==== ALIM FONKSİYONLARI ====
+    // ==== RECEPTION FUNCTIONS ===
     RequestPayload receiveRequest(const PacketData& packet); //
     AcceptPayload receiveAccept(const PacketData& packet); //
     RefusePayload receiveRefuse(const PacketData& packet); //
@@ -113,6 +176,7 @@ private:
     uint8_t _cryptoKey[16];
 
     // Parser State (RTOS Uyumlu İzole Değişkenler)
+    // Parser State (Isolated Variables for RTOS Compatibility)
     ParserState _state;
     uint16_t _bytesRead;
     uint8_t _rxBuffer[sizeof(PacketData)]; 
@@ -120,6 +184,7 @@ private:
     uint32_t _timeoutMs;
 
     // Yardımcı İç Fonksiyonlar
+    // Helper Internal Functions
     uint16_t calculateCRC16CCITT(const uint8_t *data, uint16_t length); //
     void encryptPayload(uint8_t* payload, uint8_t size); //
     void decryptPayload(uint8_t* payload, uint8_t size); //
